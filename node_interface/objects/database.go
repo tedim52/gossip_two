@@ -16,16 +16,16 @@ func CreateDatabaseFromString(string) *Database {
 	return nil
 }
 
-func (d *Database) GetValue(id NodeID) return (Value) {
+func (d *Database) GetValue(id NodeID) Value {
 	// TODO: implement
-	return nil
+	return Value{}
 }
 
 func (d* Database) SetValue(id NodeID, v Value) {
 	// TODO: implement
 }
 
-func (d* Database) Serialize() return (string) {
+func (d* Database) Serialize() string {
 	// TODO: implement
 	return ""
 }
@@ -35,9 +35,8 @@ func DeserializeDatabase(string) (*Database) {
 	return nil
 }
 
-func (d *Database) Upsert(d *Database) {
+func (d *Database) Upsert(dbToUpsert *Database) {
 	// TODO: implement
-	return nil
 }
 
 func (d* Database) PrintDatabase() {
@@ -46,7 +45,7 @@ func (d* Database) PrintDatabase() {
 
 // Takes in a string representing a database and checks that it follows
 // the line protocol format
-func _validateDatabaseFormat(db string) return (bool) {
+func _validateDatabaseFormat(db string) bool {
 	// TODO: implement
 	return false
 }

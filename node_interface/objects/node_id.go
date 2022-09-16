@@ -4,7 +4,7 @@ type IPAddress string
 
 type Port string
 
-type NodeID {
+type NodeID struct {
 	IP IPAddress
 
 	Port Port 
@@ -12,15 +12,15 @@ type NodeID {
 
 func NewNodeID(ip IPAddress, port Port) NodeID {
 	// TODO: implement
-	return nil
+	return NodeID{}
 }
 
-func (id NodeID) Serialize() return (string) {
+func (id NodeID) Serialize() string {
 	// TODO: implement
 	return ""
 }
 
-func DeserializeNodeID(id string) return (NodeID) {
+func DeserializeNodeID(id string) NodeID {
 	// TODO: implement
-	return nil
+	return NodeID{}
 }

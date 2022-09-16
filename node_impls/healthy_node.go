@@ -1,21 +1,31 @@
+package node_impls
+
+import (
+	"github.com/tedim52/gossip_two/node_interface/objects"
+	"sync"
+)
 
 // Healthy Gossip Node implementation
 type GossipNode struct {
-	nodeID NodeID
+	nodeID objects.NodeID
 
-	currVal Value
+	currVal objects.Value
 	
-	database *Database
+	database *objects.Database
 
-	peers map[NodeID]struct{}
+	peers map[objects.NodeID]struct{}
 
-	blacklist map[NodeID]struct{}
+	blacklist map[objects.NodeID]struct{}
 	
 	mutex sync.Mutex
 }
 
+func NewHealthyGossipNode() *GossipNode {
+	return nil
+}
+
 func (n *GossipNode) Gossip() {
-	int clock = 0
+	clock := 0
 	for {
 		clock++
 		if clock % 3 == 0 {
@@ -52,9 +62,9 @@ func (n *GossipNode) Listen() {
 }
 
 
-func (n *GossipNode) AddPeer(<ip:tcp> peer) {
-	mutex.Lock()
-	defer mutex.Release()
+func (n *GossipNode) AddPeer(peer objects.NodeID) error {
+	n.mutex.Lock()
+	defer n.mutex.Unlock()
 
 	// check that this node is not in the blacklist
 
@@ -75,11 +85,12 @@ func (n *GossipNode) AddPeer(<ip:tcp> peer) {
 			// add node to peer list
 	
 	// close the connection
+	return nil
 }
 
-func (n *GossipNode) UpdateValue(val) {
-	mutex.Lock()
-	defer mutex.Release()
+func (n *GossipNode) UpdateValue(v objects.Value) {
+	n.mutex.Lock()
+	defer n.mutex.Unlock()
 
-	currentValue = val
+	// TODO: implement
 }

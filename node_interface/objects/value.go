@@ -4,22 +4,23 @@ type Timestamp string
 
 type State int
 
-type Value {
+type Value struct {
 	Time Timestamp
 	
 	val State
 }
 
-func NewValue(t Timestamp, v Value) return (Value) {
+func NewValue(t Timestamp, v Value) Value {
 	// TODO: implement
-	return nil
+	return Value{}
 }
 
-func (v Value) serialize() return (string) {
+func (v Value) serialize() string {
 	// TODO: implement
 	return "unimplemented"
 }
-func  DeserializeValue(db string) return (Value) {
+
+func  DeserializeValue(db string) Value {
 	// TODO: implement
-	return nil
+	return Value{}
 }
