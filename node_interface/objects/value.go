@@ -1,26 +1,40 @@
 package objects
 
-type Timestamp string
+import (
+	"time"
+)
 
-type State int
+type Timestamp time.Time
 
-type Value struct {
-	Time Timestamp
+type GossipValue struct {
+	time time.Time
 	
-	val State
+	value int64
 }
 
-func NewValue(t Timestamp, v Value) Value {
+func NewGossipValue(t Timestamp, v int64) GossipValue {
 	// TODO: implement
-	return Value{}
+	return GossipValue{}
 }
 
-func (v Value) serialize() string {
+func (v GossipValue) serialize() string {
 	// TODO: implement
 	return "unimplemented"
 }
 
-func  DeserializeValue(db string) Value {
+func  DeserializeGossipValue(db string) GossipValue {
 	// TODO: implement
-	return Value{}
+	return GossipValue{}
+}
+
+func (v GossipValue) GetStringTime() string {
+	return ""
+}
+
+func (v GossipValue) GetIntTime() int64 {
+	return 0
+}
+
+func (v GossipValue) GetValue() int64 {
+	return v.value
 }

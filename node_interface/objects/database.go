@@ -3,29 +3,33 @@ package objects
 // Invariants:
 // - Cannot be more than 3 entries with the same IPAddress 
 //- aka cannot exist connections to more than 3 ports at the same IP
-type Database map[NodeID]*Value
+type Database struct {
+	db map[NodeID]*GossipValue
+}
 
+func InitializeDatabase() *Database {
+	// TODO: implement
+	// db := map[NodeID]*GossipValue{}
+	return &Database{
+		db: map[NodeID]*GossipValue{},
+	}
+}
 
-func InitializeDatabase(string) *Database {
+func CreateDatabaseFromString(dbString string) *Database {
 	// TODO: implement
 	return nil
 }
 
-func CreateDatabaseFromString(string) *Database {
+func (db *Database) GetGossipValue(id NodeID) GossipValue {
 	// TODO: implement
-	return nil
+	return GossipValue{}
 }
 
-func (d *Database) GetValue(id NodeID) Value {
-	// TODO: implement
-	return Value{}
-}
-
-func (d* Database) SetValue(id NodeID, v Value) {
+func (db *Database) SetGossipValue(id NodeID, v GossipValue) {
 	// TODO: implement
 }
 
-func (d* Database) Serialize() string {
+func (db *Database) Serialize() string {
 	// TODO: implement
 	return ""
 }
@@ -35,11 +39,11 @@ func DeserializeDatabase(string) (*Database) {
 	return nil
 }
 
-func (d *Database) Upsert(dbToUpsert *Database) {
+func (db *Database) Upsert(dbToUpsert *Database) {
 	// TODO: implement
 }
 
-func (d* Database) PrintDatabase() {
+func (db *Database) PrintDatabase() {
 	// TODO: implement
 }
 

@@ -5,11 +5,13 @@ import (
 )
 
 type GossipNode interface {
-	Gossip()
-	
-	Listen()
+	BoostrapNode()
 
-	AddPeer(id NodeID) (error)
+	AddPeer(id objects.NodeID) (error)
 
-	UpdateValue(v Value)
+	GetValue() (objects.GossipValue)
+
+	UpdateValue(int64)
+
+	GetDatabase() (*objects.Database)
 }
