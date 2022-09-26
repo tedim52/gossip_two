@@ -3,16 +3,27 @@ package node_impls
 import (
 	"github.com/tedim52/gossip_two/node_interface/objects"
 
-	// "fmt"
 	"sync"
 	"time"
+	"net"
+	"errors"
 )
 
 const (
 	defaultInitValue = 0
 )
 
-// Healthy Gossip Node implementation
+type GossipMessage struct {
+	serializedDB []byte
+}
+
+// Healthy Gossip Node implements a node that shares its own database to peers and pulls other peers' database, merging it into its
+// own to implement database consistency via a pull gossip method.
+// 
+// Invariants:
+// - Value associated with [nodeID] in [database] must always be equivalent to [currVal]
+// - The max number of [nodeID]'s in [database], with the same ip address (different port number) should be three
+// - Once something is added to [blacklist], it can't be removed.
 type GossipNode struct {
 	nodeID objects.NodeID
 
@@ -28,11 +39,15 @@ type GossipNode struct {
 }
 
 func NewHealthyGossipNode(ip objects.IPAddress, port objects.Port) *GossipNode {
+	nodeID := objects.NewNodeID(ip, port)
+	initValue := objects.NewGossipValue(time.Now(), 0)
+	db := objects.InitializeDatabase()
+	db.SetGossipValue(nodeID, initValue)
 
 	return &GossipNode {
-		nodeID: objects.NewNodeID(ip, port),
-		currVal: objects.NewGossipValue(objects.Timestamp(time.Now()), 0),
-		database: objects.InitializeDatabase(),
+		nodeID: nodeID, 
+		currVal: initValue,
+		database: db,
 		peers: map[objects.NodeID]struct{}{},
 		blacklist: map[objects.NodeID]struct{}{},
 	}
@@ -43,6 +58,7 @@ func (n *GossipNode) BoostrapNode(){
 	go n.gossip()
 }
 
+// gossip initiates the sending of gossip messages to
 func (n *GossipNode) gossip() {
 	// fmt.Println("starting to gossip...")
 	clock := 0
@@ -87,9 +103,13 @@ func (n *GossipNode) AddPeer(peer objects.NodeID) error {
 	n.mutex.Lock()
 	defer n.mutex.Unlock()
 
-	// check that this node is not in the blacklist
+	// Check that this node is not in the blacklist
+	if _, exists := n.blacklist[peer]; exists {
+		return errors.New("Error adding peer. Peer was blacklisted.")
+	}
 
 	// dial node
+	_, _ = net.Dial("tcp", peer.NodeID)
 
 	// err check
 		// do necessary error handling
@@ -110,6 +130,9 @@ func (n *GossipNode) AddPeer(peer objects.NodeID) error {
 }
 
 func (n* GossipNode) GetValue() objects.GossipValue {
+	n.mutex.Lock()
+	defer n.mutex.Unlock()
+
 	return n.currVal
 }
 
@@ -117,9 +140,14 @@ func (n *GossipNode) UpdateValue(v int64) {
 	n.mutex.Lock()
 	defer n.mutex.Unlock()
 
-	
+	gossipValue := objects.NewGossipValue(time.Now(), v)
+	n.database.SetGossipValue(n.nodeID, gossipValue)
+	n.currVal = gossipValue
 }
 
 func (n* GossipNode) GetDatabase() *objects.Database {
+	n.mutex.Lock()
+	defer n.mutex.Unlock()
+
 	return n.database
 }

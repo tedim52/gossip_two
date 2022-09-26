@@ -5,13 +5,20 @@ import (
 )
 
 type GossipNode interface {
+
+	// BoostrapNode starts the gossip node by:
+	// - initiating gossip to other peers
+	// - initiating listening for messages from other peers
 	BoostrapNode()
 
+	// AddPeer attempts to add a peer with [id] to the nodes peer list
+	// so that it will be considered for future gossip exchanges
 	AddPeer(id objects.NodeID) (error)
 
 	GetValue() (objects.GossipValue)
 
-	UpdateValue(int64)
+	// UpdateValue updates the nodes current value to [va]
+	UpdateValue(val int64)
 
 	GetDatabase() (*objects.Database)
 }

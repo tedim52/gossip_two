@@ -23,16 +23,13 @@ const (
 var (
 	ipAddressRegexPat = regexp.MustCompile(ipAddressRegexStr)
 	portRegexPat = regexp.MustCompile(portRegexStr)
-	
-	InvalidIPAddress = errors.New("Invalid IP adderss format. Please provide a valid IPv4 or IPv6 address.")
-	InvalidPortNumber = errors.New("Invalid TCP port format. Please provide a valid TCP port.")
+
 	InvalidInput = errors.New("Invalid input format. Please provide './gossip-two <ip-address> <port>'.")
-	InvalidNodeID = errors.New("Invalid node id format. Please provide a node id in the following format '<ip-address>:<port>'")
 )
 
 func main() {
 	// process input arguments
-	ip, port, err := processInput()
+	ip, port, err := processInput(os.Args)
 	if err != nil {
 		fmt.Println(err.Error())
 		os.Exit(1)
@@ -56,7 +53,6 @@ func gossipRepl(node node_interface.GossipNode){
 		input, err := inputReader.ReadString('\n')
 		if err != nil {
 			fmt.Println(err.Error())
-			os.Exit(1)
 		}
 		input = strings.TrimSpace(input)
 		// fmt.Println(input)
@@ -67,12 +63,14 @@ func gossipRepl(node node_interface.GossipNode){
 		} else if (input[0] == '+' && len(input) > 1) {
 			fmt.Println("adding peer to gossip node...")
 			input = input[1:]
-			peerNodeID, err := parseNodeID(input)
+			peerNodeID, err := objects.DeserializeNodeID(input)
 			if err != nil {
 				fmt.Println(err.Error())
-				os.Exit(1)
 			}
-			node.AddPeer(peerNodeID)
+			err = node.AddPeer(peerNodeID)
+			if err != nil {
+				fmt.Println(err.Error())
+			}
 		} else if intVal, err := strconv.ParseInt(input, 10, 32); err == nil {
 			fmt.Printf("updating gossip node to have this value: %d\n", intVal)
 			node.UpdateValue(intVal)
@@ -84,33 +82,17 @@ func gossipRepl(node node_interface.GossipNode){
 
 // processes command line input by asserting the following format and corresponding regexes of args:
 // input format: ./... <ip-address> <port>
-func processInput() (objects.IPAddress, objects.Port, error) {
-	if os.Args == nil || len(os.Args) < 2 {
+func processInput(args []string) (objects.IPAddress, objects.Port, error) {
+	if args == nil || len(args) < 2 {
 		return "", "", InvalidInput
 	}
-	ipAddressStr := os.Args[1]
-	portStr := os.Args[2]
+	ipAddressStr := args[1]
+	portStr := args[2]
 	if !ipAddressRegexPat.Match([]byte(ipAddressStr)) {
-		return "", "", InvalidIPAddress
+		return "", "", objects.InvalidIPAddress
 	}
 	if !portRegexPat.Match([]byte(portStr)) {
-		return "", "", InvalidPortNumber
+		return "", "", objects.InvalidPortNumber
 	}
 	return objects.IPAddress(ipAddressStr), objects.Port(portStr), nil
-}
-
-func parseNodeID(nodeIDStr string) (objects.NodeID, error) {
-	nodeIDStrList := strings.Split(nodeIDStr, ":")
-	if len(nodeIDStrList) == 1 || len(nodeIDStrList) > 2  {
-		return objects.NodeID{}, InvalidNodeID
-	}
-	ipAddresss := nodeIDStrList[0]
-	port := nodeIDStrList[1]
-	if !ipAddressRegexPat.Match([]byte(ipAddresss)) {
-		return objects.NodeID{}, InvalidIPAddress
-	}
-	if !portRegexPat.Match([]byte(port)) {
-		return objects.NodeID{}, InvalidPortNumber
-	}
-	return objects.NewNodeID(objects.IPAddress(ipAddresss), objects.Port(port)), nil
 }
