@@ -17,7 +17,7 @@ var(
 	InvalidDatabaseFormat = errors.New("Invalid database format.")
 )
 
-// Database representes the database used by a gossip node mapping [NodeID]'s of its peers to
+// Database representes a thread safe database implementation used by a gossip node mapping [NodeID]'s of its peers to
 // [GossipValue] representing the nodes most up to date information on the contents of its peer.
 // The database is serialized and deserialized based on the following format:
 //

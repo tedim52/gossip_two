@@ -61,6 +61,9 @@ func (n *GossipNode) BoostrapNode(){
 
 // gossip initiates the sending of gossip messages to
 func (n *GossipNode) gossip() {
+	n.mutex.Lock()
+	defer n.mutex.Unlock()
+	
 	// tracks errors throughout gossip
 	var err error
 	// select random node from peers or skip if no peers leftxs
@@ -77,11 +80,7 @@ func (n *GossipNode) gossip() {
 		// if dial doesn't work, add node id to blacklist
 		fmt.Println(err.Error())
 
-		n.mutex.Lock()
 		n.blacklist[peer] = struct{}{}
-		delete(n.peers, peer)
-		n.mutex.Unlock()
-
 		return
 	}
 
@@ -118,9 +117,7 @@ func (n *GossipNode) gossip() {
 	}
 
 	// upsert database
-	n.mutex.Lock()
 	n.database.Upsert(peerDB)
-	n.mutex.Unlock()
 
 	// close the connection
 	conn.Close()
@@ -169,18 +166,12 @@ func (n *GossipNode) AddPeer(peer objects.NodeID) error {
 		// do necessary error handling
 		// if dial doesn't work, add node id to blacklist
 	if err != nil {
-		// fmt.Println("error dialing peer, adding peer to blacklist and removing from peers...")
-		n.mutex.Lock()
 		n.blacklist[peer] = struct{}{}
-		delete(n.peers, peer)
-		n.mutex.Unlock()
 		return err
 	}
 
 	// add node to peer list
-	n.mutex.Lock()
 	n.peers[peer] = struct{}{}
-	n.mutex.Unlock()
 
 	// read response into buffer
 	reader := bufio.NewReader(conn)
@@ -213,9 +204,7 @@ func (n *GossipNode) AddPeer(peer objects.NodeID) error {
 	}
 
 	// upsert database
-	n.mutex.Lock()
 	n.database.Upsert(peerDB)
-	n.mutex.Unlock()
 
 	// close the connection
 	conn.Close()
