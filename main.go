@@ -53,6 +53,7 @@ func gossipRepl(node node_interface.GossipNode){
 		input, err := inputReader.ReadString('\n')
 		if err != nil {
 			fmt.Println(err.Error())
+			continue
 		}
 		input = strings.TrimSpace(input)
 
@@ -63,10 +64,12 @@ func gossipRepl(node node_interface.GossipNode){
 			peerNodeID, err := objects.DeserializeNodeID(input)
 			if err != nil {
 				fmt.Println(err.Error())
+				continue
 			}
 			err = node.AddPeer(peerNodeID)
 			if err != nil {
 				fmt.Println(err.Error())
+				continue
 			}
 		} else if intVal, err := strconv.ParseInt(input, 10, 32); err == nil {
 			node.UpdateValue(intVal)

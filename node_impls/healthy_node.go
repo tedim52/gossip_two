@@ -68,11 +68,12 @@ func (n *GossipNode) gossip() {
 
 	// tracks errors throughout gossip
 	var err error
-	// select random node from peers or skip if no peers leftxs
-	if len(n.peers) == 0 {
+
+	peer, found := n.getRandomPeerNodeID()
+	if !found {
 		return
 	}
-	peer := n.getRandomPeerNodeID()
+	// Check that this node is not in the blacklist
 	if _, found := n.blacklist[peer]; found {
 		return
 	}
@@ -117,7 +118,6 @@ func (n *GossipNode) gossip() {
 		// do necessary error handling
 	peerDB, err := objects.DeserializeDatabase(peerDBStr)
 	if err != nil {
-		fmt.Println(peerDBStr)
 		fmt.Println(err.Error())
 		return
 	}
@@ -174,7 +174,7 @@ func (n *GossipNode) AddPeer(peer objects.NodeID) error {
 		return err
 	}
 
-	// add node to peer list
+	// add node to peer set
 	n.peers[peer] = struct{}{}
 
 	// read response into buffer
@@ -226,11 +226,14 @@ func (n *GossipNode) GetDatabase() *objects.Database {
 }
 
 // Invariant: 
-// 	- n.peers cannot equal 0
-func (n *GossipNode) getRandomPeerNodeID() objects.NodeID {
+// 	- [peers] cannot equal 0
+func (n *GossipNode) getRandomPeerNodeID() (objects.NodeID, bool) {
+	if len(n.peers) == 0 {
+		return objects.NodeID{}, false
+	}
 	var nodeID objects.NodeID
 	for id, _ := range n.peers {
 		nodeID = id
 	}
-	return nodeID
+	return nodeID, true
 }
