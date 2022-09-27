@@ -60,26 +60,31 @@ func (db *Database) GetGossipValue(id NodeID) (GossipValue, bool) {
 	return gossipVal, true
 }
 
+// TODO: this function violates single responsibility principle by both updating and returning whether or not smth was to be updated or not, thus there's a side effect. 
+//	find better way to do this
+
 // SetGossipValue sets [id] to [v] in the database unless the following is the case in order to abide by invariants:
 // - There are already [maxNumPortsPerIP] ports associated with the same IPAddress in [db]
 // - The time associated with [v] is past this nodes local time ("in the future")
 // - If there is already a value in the [db] associated with [id], and the timestamp of the value is after the timestamp of [v]
-func (db *Database) SetGossipValue(id NodeID, v GossipValue) {
+// Returns true if something was updated, and false otherwise. 
+func (db *Database) SetGossipValue(id NodeID, v GossipValue) bool {
 	if v.GetTime().After(time.Now()) {
-		return
+		return false
 	}
 	if db.ipToNumPorts[id.IP] == maxNumPortsPerIP {
-		return
+		return false
 	}
 	currGossipVal, found := db.db[id]
 	if found && currGossipVal.GetTime().After(v.GetTime()) {
-		return
+		return false
 	}
 	db.db[id] = v
 	db.ipToNumPorts[id.IP] = db.ipToNumPorts[id.IP] + 1
 	// THIS IS BAD THIS IS A SIDE EFFECT BUT IT SEEMS TO GET THE JOB DONE, PRINT ONLY EXACTLY WHEN AN UPDATE OCCURS
 	// TODO: is there a more clean way to do this? maybe return updated node ids and print at the gossip or main level
 	fmt.Println(fmt.Sprintf("%s --> %s", id.Serialize(), v.GetValueString()))
+	return true
 }
 
 func (db *Database) Serialize() string {

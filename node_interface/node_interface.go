@@ -5,10 +5,12 @@ import (
 )
 
 type GossipNode interface {
-
 	// BoostrapNode starts the gossip node by:
 	// - initiating gossip to other peers
 	// - initiating listening for messages from other peers
+	// Gossip occurs in a pull, anti-entropy fashion meaning
+	//	1. pull -> nodes will "prompt" or "query" other nodes to get their updates
+	// 	2. anti-entropy -> when a node gets "prompted" or "queried", it will send the entirety of its database back
 	BoostrapNode()
 
 	// AddPeer attempts to add a peer with [id] to the nodes peer list

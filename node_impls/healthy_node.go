@@ -18,10 +18,6 @@ const (
 	numLinesToRead = 256
 )
 
-type GossipMessage struct {
-	serializedDB []byte
-}
-
 // Healthy Gossip Node implements a node that shares its own database to peers and pulls other peers' database, merging it into its
 // own to implement database consistency via a pull gossip method.
 // 
@@ -70,20 +66,21 @@ func (n *GossipNode) gossip() {
 	for {
 		clock++
 		if clock % 3 == 0 {
+			n.mutex.Lock()
 			// tracks errors throughout gossip
 			var err error
 			// select random node from peers
-			peer := n.GetRandomPeerNodeID()
+			peer := n.getRandomPeerNodeID()
 	
 			fmt.Println("attempting to gossip with a random peer...")
 			// Dial node
 			conn, err := net.Dial("tcp", peer.Serialize())
-
 			// err check
 			if err != nil {
 				// do necessary error handling
 				// if dial doesn't work, add node id to blacklist
 				fmt.Println("error dialing peer, adding peer to blacklist and removing from peers...")
+				fmt.Println(err.Error())
 				n.blacklist[peer] = struct{}{}
 				delete(n.peers, peer)
 				continue
@@ -113,6 +110,7 @@ func (n *GossipNode) gossip() {
 			}
 			if err != nil && err != io.EOF {
 				// this means that smth went wrong and we actually don't want to do any gossip so keep moving clock
+				fmt.Println(err.Error())
 				continue
 			}
 		
@@ -134,22 +132,43 @@ func (n *GossipNode) gossip() {
 			fmt.Println("closing connection to peer...")
 			// close the connection
 			conn.Close()
+			n.mutex.Unlock()
 		}
 	}
 }
 
 func (n *GossipNode) listen() {
 	fmt.Println("starting to listen...")
+
 	// setup listener
+	fmt.Println("setting up a listener on this nodes port...")
+	ln, err := net.Listen("tcp", n.nodeID.Serialize())
+	if err != nil {
+		fmt.Println("error occurred setting up listener for node")
+	}
+	defer ln.Close()
+	
 	for {
-		// accept connections
+		conn, err := ln.Accept()
+		if err != nil {
+			fmt.Println("error occurred accepting a connection on port for node.")
+			fmt.Println(err.Error())
+			continue
+		}
+		fmt.Println("accepted a connection on port, now gossiping database...")
 
 		// once connection is received
 		// send back serialized GossipValue of database
+		if _, err = conn.Write([]byte(n.database.Serialize())); err != nil {
+			fmt.Println("error occurred while gossiping database...")
+			fmt.Println(err.Error())
+		}
+		fmt.Println("successfully sent database to node that connected with me!")
+
 		// close the connection
+		conn.Close()
 	}
 }
-
 
 func (n *GossipNode) AddPeer(peer objects.NodeID) error {
 	n.mutex.Lock()
@@ -235,8 +254,10 @@ func (n *GossipNode) UpdateValue(v int64) {
 	defer n.mutex.Unlock()
 
 	gossipValue := objects.NewGossipValue(time.Now(), v)
-	n.database.SetGossipValue(n.nodeID, gossipValue)
-	n.currVal = gossipValue
+	// this value should always be set given database invariants, but we check in case
+	if n.database.SetGossipValue(n.nodeID, gossipValue) {
+		n.currVal = gossipValue
+	}
 }
 
 func (n *GossipNode) GetDatabase() *objects.Database {
@@ -246,7 +267,7 @@ func (n *GossipNode) GetDatabase() *objects.Database {
 	return n.database
 }
 
-func (n *GossipNode) GetRandomPeerNodeID()  objects.NodeID {
+func (n *GossipNode) getRandomPeerNodeID()  objects.NodeID {
 	k := rand.Intn(len(n.peers))
 	peerNodeIDs := make([]objects.NodeID, len(n.peers))
 	for nodeID, _ := range(n.peers) {
