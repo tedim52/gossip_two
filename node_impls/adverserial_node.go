@@ -128,19 +128,13 @@ func (n *BadGossipNode) listen() {
 	defer ln.Close()
 	
 	for {
-		conn, err := ln.Accept()
+		_, err := ln.Accept()
 		if err != nil {
 			fmt.Println(err.Error())
 			continue
 		}
 
-		// once connection is received, send back serialized GossipValue of database
-		if _, err = conn.Write([]byte(n.database.Serialize())); err != nil {
-			fmt.Println(err.Error())
-		}
-
-		// close the connection
-		conn.Close()
+		// ACCEPT CONNECTION AND DON'T DO ANYTHING
 	}
 }
 
