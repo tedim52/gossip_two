@@ -80,6 +80,11 @@ func (n *BadGossipNode) gossip() {
 		n.blacklist[peer] = struct{}{}
 		return
 	}
+	err = conn.SetReadDeadline(time.Now().Add(10 * time.Second))
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
 
 	// read response into buffer
 	reader := bufio.NewReader(conn)
@@ -171,6 +176,11 @@ func (n *BadGossipNode) AddPeer(peer objects.NodeID) error {
 	conn, err := net.Dial("tcp", peer.Serialize())
 	if err != nil {
 		n.blacklist[peer] = struct{}{}
+		return err
+	}
+	err = conn.SetReadDeadline(time.Now().Add(10 * time.Second))
+	if err != nil {
+		fmt.Println(err.Error())
 		return err
 	}
 
