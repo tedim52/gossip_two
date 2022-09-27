@@ -38,7 +38,7 @@ type GossipNode struct {
 	mutex sync.Mutex
 }
 
-func NewHealthyGossipNode(ip objects.IPAddress, port objects.Port) *GossipNode {
+func NewHealthyGossipNode(ip string, port string) *GossipNode {
 	nodeID := objects.NewNodeID(ip, port)
 	initValue := objects.NewGossipValue(time.Now(), 0)
 	db := objects.InitializeDatabase()

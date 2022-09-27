@@ -2,6 +2,15 @@ package objects
 
 import (
 	"fmt"
+	"errors"
+	"strings"
+	"time"
+)
+
+const (
+	entryDelimeter = ","
+	newEntryDelimeter = "\n"
+	maxNumPortsPerIP = 3
 )
 
 var(
@@ -24,16 +33,20 @@ var(
 // 121.104.230.38:3001,1221344233,85\n
 //
 // Invariants:
-// - Cannot be more than 3 [NodeID] entries with the same [IPAddress]
+// - Cannot be more than [maxNumPortsPerIP] [NodeID] entries with the same [IPAddress]
 //	- aka cannot exist connections to more than 3 ports at the same IP
 // - There should be no [GossipValue]'s in [db] that have a [time] later than this node's current time
+// - All IPAddress' in [ipToNumPorts] are associated with at least one IPAddress in a NodeID in [db]
 type Database struct {
 	db map[NodeID]GossipValue
+
+	ipToNumPorts map[IPAddress]int
 }
 
 func InitializeDatabase() *Database {
 	return &Database{
-		db: map[NodeID]GossipValue{},
+		db: make(map[NodeID]GossipValue),
+		ipToNumPorts: make(map[IPAddress]int),
 	}
 }
 
@@ -42,25 +55,63 @@ func InitializeDatabase() *Database {
 func (db *Database) GetGossipValue(id NodeID) (GossipValue, bool) {
 	gossipVal, found := db.db[id]
 	if !found {
-		return Gossip{}, false
+		return GossipValue{}, false
 	}
 	return gossipVal, true
 }
 
+// SetGossipValue sets [id] to [v] in the database unless the following is the case in order to abide by invariants:
+// - There are already [maxNumPortsPerIP] ports associated with the same IPAddress in [db]
+// - The time associated with [v] is past this nodes local time ("in the future")
 func (db *Database) SetGossipValue(id NodeID, v GossipValue) {
+	if v.GetTime().After(time.Now()) {
+		return
+	}
+	if db.ipToNumPorts[id.IP] == maxNumPortsPerIP {
+		return
+	}
 	db.db[id] = v
+	db.ipToNumPorts[id.IP] = db.ipToNumPorts[id.IP] + 1
 }
 
 func (db *Database) Serialize() string {
-	// TODO: implement
-	return ""
+	dbStr := ""
+	for id, _ := range db.db { 
+		dbStr = dbStr + db.serializeDatabaseEntry(id) + "\n"
+	}
+	return dbStr
 }
 
-// DeserializeDatabase takes a string representing a database and returns a Database struct. 
+// DeserializeDatabase takes a [dbStr] representing a database and returns a Database struct. 
 // Returns error if the database string is an invalid format.
-func DeserializeDatabase(string) (*Database, error) {
-	// TODO: implement
-	return nil
+func DeserializeDatabase(dbStr string) (*Database, error) {
+	db := InitializeDatabase()
+	dbEntryStrList := strings.Split(dbStr, newEntryDelimeter)
+	dbEntryStrList = dbEntryStrList[:len(dbEntryStrList) - 1]
+	if len(dbEntryStrList) == 0 {
+		return nil, InvalidDatabaseFormat
+	}
+	for _, entryStr  := range(dbEntryStrList) {
+		entryValueStrList := strings.SplitAfterN(entryStr, entryDelimeter, 2)
+		if len(entryValueStrList) != 2 {
+			return nil, InvalidDatabaseFormat
+		}
+		nodeIDStr := entryValueStrList[0]
+		nodeIDStr = nodeIDStr[:len(nodeIDStr)-1]
+		nodeID, err := DeserializeNodeID(nodeIDStr)
+		if err != nil {
+			// could turn this into a continue to be more liberal
+			return nil, err
+		}
+		gossipValStr := entryValueStrList[1]
+		gossipVal, err := DeserializeGossipValue(gossipValStr)
+		if err != nil {
+			// could turn this into a continue to be more liberal
+			return nil, err
+		}
+		db.SetGossipValue(nodeID, gossipVal)
+	}
+	return db, nil
 }
 
 // Upsert takes in a [dbToUpsert] and merges the mappings in [db] with the mappings in [db] according to the following rules:
@@ -68,24 +119,37 @@ func DeserializeDatabase(string) (*Database, error) {
 // If [dbToUpsert] contains a NodeID entry in [db], ONLY add this entry to [db] if the timestamp associated with the GossipValue is later than 
 // the timestamp associated with GossipValue aready in [db]
 func (db *Database) Upsert(dbToUpsert *Database) {
-	// TODO: implement
+	for _, nodeID := range dbToUpsert.GetNodeIDs() {
+		gossipVal, _ := dbToUpsert.GetGossipValue(nodeID)
+		db.SetGossipValue(nodeID, gossipVal)
+	}
 }
 
+// is this function needed?
 func (db *Database) PrintDatabase() {
-	// TODO: implement
+	fmt.Println(db.Serialize())
 }
 
 // Serializes a single database entry into the following format: 'NodeID,GossipValue'
 // ex. 122.116.233.149:8080,1234154131241,123
 // Invariant: 
-// 
+// 	[id] must exist as an entry in [db]
 func (db *Database) serializeDatabaseEntry(id NodeID) (string)  {
-	return fmt.Sprintf("%s,%s")
+	value, _ := db.db[id]
+	return fmt.Sprintf("%v,%v", id.Serialize(), value.Serialize())
 }
 
-// Takes in a string representing a database and checks that it follows
-// the line protocol format
-func validateDatabaseFormat(db string) bool {
-	// TODO: implement
-	return false
+func (db *Database) Size() int {
+	return len(db.db)
+}
+
+// Retrieves all NodeIDs mapped in [db]
+func (db *Database) GetNodeIDs() []NodeID {
+	nodeIDs := make([]NodeID, len(db.db))
+	i := 0
+	for nodeID, _ := range db.db {
+		nodeIDs[i] = nodeID
+		i++
+	}
+	return nodeIDs
 }

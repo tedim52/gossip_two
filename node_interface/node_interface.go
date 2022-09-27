@@ -17,7 +17,7 @@ type GossipNode interface {
 
 	GetValue() (objects.GossipValue)
 
-	// UpdateValue updates the nodes current value to [va]
+	// UpdateValue updates the nodes current value to [val]
 	UpdateValue(val int64)
 
 	GetDatabase() (*objects.Database)

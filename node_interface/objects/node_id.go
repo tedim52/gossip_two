@@ -33,11 +33,13 @@ type NodeID struct {
 	NodeID string
 }
 
-// Creates a NodeID represetnation
-func NewNodeID(ip IPAddress, port Port) NodeID {
+// Creates a NodeID representation
+// Invariants:
+// 	- [ip] and [port] must have correct corresponding formats, according to regexes
+func NewNodeID(ip string, port string) NodeID {
 	return NodeID{
-		IP: ip,
-		Port: port,
+		IP: IPAddress(ip),
+		Port: Port(port),
 		NodeID: fmt.Sprintf("%s:%s", string(ip), string(port)),
 	}
 }
@@ -61,5 +63,5 @@ func DeserializeNodeID(idStr string) (NodeID, error) {
 	if !portRegexPat.Match([]byte(port)) {
 		return NodeID{}, InvalidPortNumber
 	}
-	return NewNodeID(IPAddress(ipAddresss), Port(port)), nil
+	return NewNodeID(ipAddresss, port), nil
 }

@@ -8,7 +8,7 @@ import (
 func TestSerializeNodeID(t *testing.T){
 	ip := "122.116.233.149"
 	port := "8080"
-	nodeID := NewNodeID(IPAddress(ip), Port(port))
+	nodeID := NewNodeID(ip, port)
 
 	expectedNodeIDStr := "122.116.233.149:8080"
 	nodeIDStr := nodeID.Serialize()

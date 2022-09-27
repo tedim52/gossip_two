@@ -82,7 +82,7 @@ func gossipRepl(node node_interface.GossipNode){
 
 // processes command line input by asserting the following format and corresponding regexes of args:
 // input format: ./... <ip-address> <port>
-func processInput(args []string) (objects.IPAddress, objects.Port, error) {
+func processInput(args []string) (string, string, error) {
 	if args == nil || len(args) < 2 {
 		return "", "", InvalidInput
 	}
@@ -94,5 +94,5 @@ func processInput(args []string) (objects.IPAddress, objects.Port, error) {
 	if !portRegexPat.Match([]byte(portStr)) {
 		return "", "", objects.InvalidPortNumber
 	}
-	return objects.IPAddress(ipAddressStr), objects.Port(portStr), nil
+	return ipAddressStr, portStr, nil
 }
