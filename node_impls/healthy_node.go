@@ -13,7 +13,6 @@ import (
 )
 
 const (
-	defaultInitValue = 0
 	numLinesToRead = 256
 	timeBetweenGossips = 3
 )

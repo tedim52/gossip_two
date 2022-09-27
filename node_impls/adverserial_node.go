@@ -12,12 +12,6 @@ import (
 	"io"
 )
 
-const (
-	defaultInitValue = 0
-	numLinesToRead = 256
-	timeBetweenGossips = 3
-)
-
 // Healthy Gossip Node implements a node that shares its own database to peers and pulls other peers' database, merging it into its
 // own to implement database consistency via a pull gossip method.
 // 

@@ -28,7 +28,7 @@ var (
 	ipAddressRegexPat = regexp.MustCompile(ipAddressRegexStr)
 	portRegexPat = regexp.MustCompile(portRegexStr)
 
-	InvalidInput = errors.New("Invalid input format. Please provide './gossip-two <ip-address> <port>'.")
+	InvalidInput = errors.New("Invalid input format. Please provide './gossip-two <ip-address> <port> <adverserial mode (true if so)>'.")
 )
 
 func main() {
@@ -42,9 +42,10 @@ func main() {
 	// initialize and start healthy gossip node
 	var node node_interface.GossipNode
 	if adverserial {
-		node := node_impls.NewAdverserialGossipNode(ip, port)
+		fmt.Println("ADVERSERIAL MODE")
+		node = node_impls.NewAdverserialGossipNode(ip, port)
 	} else {
-		node := node_impls.NewHealthyGossipNode(ip, port)	
+		node = node_impls.NewHealthyGossipNode(ip, port)	
 	}
 	node.BoostrapNode()
 
@@ -88,8 +89,8 @@ func gossipRepl(node node_interface.GossipNode){
 // processes command line input by asserting the following format and corresponding regexes of args:
 // input format: ./... <ip-address> <port> <adverserial mode (true if so)>
 func processInput(args []string) (string, string, bool, error) {
-	if args == nil || len(args) < 3 {
-		return "", "", InvalidInput
+	if args == nil || len(args) < 4 {
+		return "", "", false, InvalidInput
 	}
 	ipAddressStr := args[1]
 	portStr := args[2]
@@ -102,7 +103,7 @@ func processInput(args []string) (string, string, bool, error) {
 	if !portRegexPat.Match([]byte(portStr)) {
 		return "", "", adverserial, objects.InvalidPortNumber
 	}
-	if adverserial == "true" {
+	if adverserialStr == "true" {
 		adverserial = true
 	}
 	return ipAddressStr, portStr, adverserial, nil
