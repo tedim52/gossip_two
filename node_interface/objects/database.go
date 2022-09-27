@@ -84,9 +84,9 @@ func (db *Database) SetGossipValue(id NodeID, v GossipValue) {
 	if found && currGossipVal.GetTime().After(v.GetTime()) {
 		return
 	}
-	// if db.maxPortsForIP(id.IP) {
-	// 	return
-	// }
+	if db.maxPortsForIP(id.IP) {
+		return
+	}
 	db.db[id] = v
 	// THIS IS BAD THIS IS A SIDE EFFECT BUT IT GETS THE JOB DONE, PRINT ONLY EXACTLY WHEN AN UPDATE OCCURS
 	// TODO: is there a more clean way to do this? maybe return updated node ids and print at the gossip or main level
@@ -182,7 +182,7 @@ func (db *Database) serializeDatabaseEntry(id NodeID) (string)  {
 func (db *Database) maxPortsForIP(ip IPAddress) bool {
 	numPorts := 0
 	for nodeID, _ := range db.db {
-		if string(nodeID.IP) == string(ip) {
+		if nodeID.IP == ip {
 			numPorts = numPorts + 1
 		}
 		if numPorts == maxNumPortsPerIP {

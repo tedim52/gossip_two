@@ -18,6 +18,8 @@ func TestSerializeDatabaseWithOneEntry(t *testing.T){
 	require.Equal(t, expectedDBStr, dbStr)	
 }
 
+// weak test -> no order enforced on the iterating of db entries
+// so nondeterministic
 func TestSerializeDatabaseWithOneMultipleEntries(t *testing.T){
 	db := InitializeDatabase()
 
