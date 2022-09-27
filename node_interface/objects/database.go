@@ -5,6 +5,7 @@ import (
 	"errors"
 	"strings"
 	"time"
+	"sync"
 )
 
 const (
@@ -89,9 +90,12 @@ func (db *Database) SetGossipValue(id NodeID, v GossipValue) bool {
 	}
 	db.db[id] = v
 	// db.ipToNumPorts[id.IP] = db.ipToNumPorts[id.IP] + 1
-	// THIS IS BAD THIS IS A SIDE EFFECT BUT IT SEEMS TO GET THE JOB DONE, PRINT ONLY EXACTLY WHEN AN UPDATE OCCURS
+	// THIS IS BAD THIS IS A SIDE EFFECT BUT IT GETS THE JOB DONE, PRINT ONLY EXACTLY WHEN AN UPDATE OCCURS
 	// TODO: is there a more clean way to do this? maybe return updated node ids and print at the gossip or main level
-	// fmt.Println(fmt.Sprintf("%s --> %s", id.Serialize(), v.GetValueString()))
+	// only print if already in db and new value
+	if found && currGossipVal.GetValue() != v.GetValue(){
+		fmt.Println(fmt.Sprintf("%s --> %s", id.Serialize(), v.GetValueString()))
+	}
 	return true
 }
 

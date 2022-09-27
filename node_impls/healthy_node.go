@@ -38,6 +38,8 @@ type GossipNode struct {
 func NewHealthyGossipNode(ip string, port string) *GossipNode {
 	nodeID := objects.NewNodeID(ip, port)
 	db := objects.InitializeDatabase()
+	initVal := objects.NewGossipValue(time.Now(), 0)
+	db.SetGossipValue(nodeID, initVal)
 
 	return &GossipNode {
 		nodeID: nodeID, 
@@ -63,7 +65,7 @@ func (n *GossipNode) BoostrapNode(){
 func (n *GossipNode) gossip() {
 	n.mutex.Lock()
 	defer n.mutex.Unlock()
-	
+
 	// tracks errors throughout gossip
 	var err error
 	// select random node from peers or skip if no peers leftxs
@@ -71,6 +73,9 @@ func (n *GossipNode) gossip() {
 		return
 	}
 	peer := n.getRandomPeerNodeID()
+	if _, found := n.blacklist[peer]; found {
+		return
+	}
 
 	// Dial node
 	conn, err := net.Dial("tcp", peer.Serialize())
@@ -112,6 +117,7 @@ func (n *GossipNode) gossip() {
 		// do necessary error handling
 	peerDB, err := objects.DeserializeDatabase(peerDBStr)
 	if err != nil {
+		fmt.Println(peerDBStr)
 		fmt.Println(err.Error())
 		return
 	}
@@ -124,8 +130,6 @@ func (n *GossipNode) gossip() {
 }
 
 func (n *GossipNode) listen() {
-	fmt.Println("starting to listen...")
-
 	// setup listener
 	ln, err := net.Listen("tcp", n.nodeID.Serialize())
 	if err != nil {
