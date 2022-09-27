@@ -33,14 +33,19 @@ var (
 
 func main() {
 	// process input arguments
-	ip, port, err := processInput(os.Args)
+	ip, port, adverserial, err := processInput(os.Args)
 	if err != nil {
 		fmt.Println(err.Error())
 		os.Exit(1)
 	}
 
 	// initialize and start healthy gossip node
-	node := node_impls.NewHealthyGossipNode(ip, port)
+	var node node_interface.GossipNode
+	if adverserial {
+		node := node_impls.NewAdverserialGossipNode(ip, port)
+	} else {
+		node := node_impls.NewHealthyGossipNode(ip, port)	
+	}
 	node.BoostrapNode()
 
 	// start read-eval print loop
@@ -81,19 +86,24 @@ func gossipRepl(node node_interface.GossipNode){
 }
 
 // processes command line input by asserting the following format and corresponding regexes of args:
-// input format: ./... <ip-address> <port>
-func processInput(args []string) (string, string, error) {
-	if args == nil || len(args) < 2 {
+// input format: ./... <ip-address> <port> <adverserial mode (true if so)>
+func processInput(args []string) (string, string, bool, error) {
+	if args == nil || len(args) < 3 {
 		return "", "", InvalidInput
 	}
 	ipAddressStr := args[1]
 	portStr := args[2]
+	adverserialStr := args[3]
+	adverserial := false
 	// TODO: this validation logic should go in functions in objects.NodeID, knowledge of correct format/regexes shouldn't be at the main lvl
 	if !ipAddressRegexPat.Match([]byte(ipAddressStr)) {
-		return "", "", objects.InvalidIPAddress
+		return "", "", adverserial, objects.InvalidIPAddress
 	}
 	if !portRegexPat.Match([]byte(portStr)) {
-		return "", "", objects.InvalidPortNumber
+		return "", "", adverserial, objects.InvalidPortNumber
 	}
-	return ipAddressStr, portStr, nil
+	if adverserial == "true" {
+		adverserial = true
+	}
+	return ipAddressStr, portStr, adverserial, nil
 }

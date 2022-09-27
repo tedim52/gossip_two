@@ -41,17 +41,16 @@ var(
 type Database struct {
 	db map[NodeID]GossipValue
 
-	ipToNumPorts map[IPAddress]int
-
 	mutex sync.RWMutex
 }
 
 func InitializeDatabase() *Database {
 	return &Database{
 		db: make(map[NodeID]GossipValue),
-		ipToNumPorts: make(map[IPAddress]int),
 	}
 }
+
+// TODO: Printing logic is actually broken. Should print everytime there's a new update. that doesn't actually happen every time with this logic.
 
 // GetGossipValue returns the GossipValue associated with [id] if a value exists along with true.
 // If no entry is found associated with [id], an empty GossipValue and false is returned.
@@ -85,6 +84,9 @@ func (db *Database) SetGossipValue(id NodeID, v GossipValue) {
 	if found && currGossipVal.GetTime().After(v.GetTime()) {
 		return
 	}
+	// if db.maxPortsForIP(id.IP) {
+	// 	return
+	// }
 	db.db[id] = v
 	// THIS IS BAD THIS IS A SIDE EFFECT BUT IT GETS THE JOB DONE, PRINT ONLY EXACTLY WHEN AN UPDATE OCCURS
 	// TODO: is there a more clean way to do this? maybe return updated node ids and print at the gossip or main level
@@ -173,4 +175,19 @@ func (db *Database) GetNodeIDs() []NodeID {
 func (db *Database) serializeDatabaseEntry(id NodeID) (string)  {
 	value, _ := db.db[id]
 	return fmt.Sprintf("%v,%v", id.Serialize(), value.Serialize())
+}
+
+// very brute force check
+// returns true if there are [maxNumPortsPerIP] ports associated with [ip] in [db]
+func (db *Database) maxPortsForIP(ip IPAddress) bool {
+	numPorts := 0
+	for nodeID, _ := range db.db {
+		if string(nodeID.IP) == string(ip) {
+			numPorts = numPorts + 1
+		}
+		if numPorts == maxNumPortsPerIP {
+			return true
+		}
+	}
+	return false
 }

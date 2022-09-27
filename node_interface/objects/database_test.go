@@ -98,7 +98,7 @@ func TestDoesNotSetGossipValueMoreThanMaxPortsPerIP(t *testing.T){
 	timeTwo, _ := stringTimeToTime("1663218247")
 	gossipValTwo := NewGossipValue(timeTwo, 7)
 
-	nodeIDThree := NewNodeID("127.0.0.1", "4001")
+	nodeIDThree := NewNodeID("127.0.0.1", "4008")
 	timeThree, _ := stringTimeToTime("1664228459")
 	gossipValThree := NewGossipValue(timeThree, 1234)
 
@@ -113,7 +113,7 @@ func TestDoesNotSetGossipValueMoreThanMaxPortsPerIP(t *testing.T){
 	// should not set this Gossip Value
 	db.SetGossipValue(nodeIDFour, gossipValFour)
 
-	require.Equal(t, db.Size(), 3)	
+	require.Equal(t, 3, db.Size())	
 }
 
 // Weak test
