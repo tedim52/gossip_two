@@ -30,11 +30,11 @@ type BadGossipNode struct {
 	mutex sync.Mutex
 }
 
-func NewAdverserialGossipNode(ip string, port string) *GossipNode {
+func NewAdverserialGossipNode(ip string, port string) *BadGossipNode {
 	nodeID := objects.NewNodeID(ip, port)
 	db := objects.InitializeDatabase()
 
-	return &GossipNode {
+	return &BadGossipNode {
 		nodeID: nodeID, 
 		database: db,
 		peers: make(map[objects.NodeID]struct{}),
@@ -128,13 +128,33 @@ func (n *BadGossipNode) listen() {
 	defer ln.Close()
 	
 	for {
-		_, err := ln.Accept()
+		conn, err := ln.Accept()
 		if err != nil {
 			fmt.Println(err.Error())
 			continue
 		}
 
-		// ACCEPT CONNECTION AND DON'T DO ANYTHING
+		// ADVERSERIAL MODES (UNCOMMENT WHICH ADVERSERIAL FEATURE TO USE)
+
+		// 1. ACCEPT CONNECTION AND DON'T SEND BACK ANYTHING
+
+		// 2. SEND BACK RANDOM CHARACTERS
+		// // once connection is received, send back serialized GossipValue of database
+		// if _, err = conn.Write([]byte("3214oi2klc ;kr d,.mnfqcew")); err != nil {
+		// 	fmt.Println(err.Error())
+		// }
+
+		// // close the connection
+		// conn.Close()
+
+		// 3. CORRECT DATABASE FORMAT BUT DANGEROUS GOSSIP INFO (INCORRECT IP AND FUTURE TIMESTAMP)
+		// // once connection is received, send back serialized GossipValue of database
+		// if _, err = conn.Write([]byte("211.66.250.91:8080,1964282751,89\n")); err != nil {
+		// 	fmt.Println(err.Error())
+		// }
+
+		// // close the connection
+		// conn.Close()
 	}
 }
 
