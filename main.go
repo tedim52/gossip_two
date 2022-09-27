@@ -38,9 +38,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	// fmt.Println(ip)
-	// fmt.Println(port)
-
 	// initialize and start healthy gossip node
 	node := node_impls.NewHealthyGossipNode(ip, port)
 	node.BoostrapNode()
@@ -58,13 +55,10 @@ func gossipRepl(node node_interface.GossipNode){
 			fmt.Println(err.Error())
 		}
 		input = strings.TrimSpace(input)
-		// fmt.Println(input)
 
 		if (input == "?"){
-			fmt.Println("printing gossip database...")
 			fmt.Print(node.GetDatabase().Serialize())
 		} else if (input[0] == '+' && len(input) > 1) {
-			fmt.Println("adding peer to gossip node...")
 			input = input[1:]
 			peerNodeID, err := objects.DeserializeNodeID(input)
 			if err != nil {
@@ -75,7 +69,6 @@ func gossipRepl(node node_interface.GossipNode){
 				fmt.Println(err.Error())
 			}
 		} else if intVal, err := strconv.ParseInt(input, 10, 32); err == nil {
-			fmt.Printf("updating gossip node to have this value: %d\n", intVal)
 			node.UpdateValue(intVal)
 		} else {
 			fmt.Println("Unrecognized input. Try again.")

@@ -72,14 +72,6 @@ func (v GossipValue) GetValueString() string {
 	return fmt.Sprint(v.value)
 }
 
-// CompareTime returns true if GossipValue [a] precedes GossipValue [b]
-// this is determined based on which value was gossiped first
-func CompareTime(a GossipValue, b GossipValue) bool{
-	timeA := a.GetTime()
-	timeB := b.GetTime()
-	return timeA.Before(timeB)
-}
-
 func stringTimeToTime(timeStr string) (time.Time, error){
 	timeInt, err := strconv.ParseInt(timeStr, 10, 64)
 	if err != nil {

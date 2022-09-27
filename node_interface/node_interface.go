@@ -17,8 +17,6 @@ type GossipNode interface {
 	// so that it will be considered for future gossip exchanges
 	AddPeer(id objects.NodeID) (error)
 
-	GetValue() (objects.GossipValue)
-
 	// UpdateValue updates the nodes current value to [val]
 	UpdateValue(val int64)
 

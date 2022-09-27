@@ -41,6 +41,8 @@ type Database struct {
 	db map[NodeID]GossipValue
 
 	ipToNumPorts map[IPAddress]int
+
+	mutex sync.RWMutex
 }
 
 func InitializeDatabase() *Database {
@@ -53,6 +55,9 @@ func InitializeDatabase() *Database {
 // GetGossipValue returns the GossipValue associated with [id] if a value exists along with true.
 // If no entry is found associated with [id], an empty GossipValue and false is returned.
 func (db *Database) GetGossipValue(id NodeID) (GossipValue, bool) {
+	db.mutex.RLock()
+	defer db.mutex.RUnlock()
+
 	gossipVal, found := db.db[id]
 	if !found {
 		return GossipValue{}, false
@@ -69,25 +74,31 @@ func (db *Database) GetGossipValue(id NodeID) (GossipValue, bool) {
 // - If there is already a value in the [db] associated with [id], and the timestamp of the value is after the timestamp of [v]
 // Returns true if something was updated, and false otherwise. 
 func (db *Database) SetGossipValue(id NodeID, v GossipValue) bool {
+	db.mutex.Lock()
+	defer db.mutex.Unlock()
+
 	if v.GetTime().After(time.Now()) {
 		return false
 	}
-	if db.ipToNumPorts[id.IP] == maxNumPortsPerIP {
-		return false
-	}
+	// if db.ipToNumPorts[id.IP] == maxNumPortsPerIP {
+	// 	return false
+	// }
 	currGossipVal, found := db.db[id]
 	if found && currGossipVal.GetTime().After(v.GetTime()) {
 		return false
 	}
 	db.db[id] = v
-	db.ipToNumPorts[id.IP] = db.ipToNumPorts[id.IP] + 1
+	// db.ipToNumPorts[id.IP] = db.ipToNumPorts[id.IP] + 1
 	// THIS IS BAD THIS IS A SIDE EFFECT BUT IT SEEMS TO GET THE JOB DONE, PRINT ONLY EXACTLY WHEN AN UPDATE OCCURS
 	// TODO: is there a more clean way to do this? maybe return updated node ids and print at the gossip or main level
-	fmt.Println(fmt.Sprintf("%s --> %s", id.Serialize(), v.GetValueString()))
+	// fmt.Println(fmt.Sprintf("%s --> %s", id.Serialize(), v.GetValueString()))
 	return true
 }
 
 func (db *Database) Serialize() string {
+	db.mutex.RLock()
+	defer db.mutex.RUnlock()
+
 	dbStr := ""
 	for id, _ := range db.db { 
 		dbStr = dbStr + db.serializeDatabaseEntry(id) + "\n"
@@ -139,11 +150,17 @@ func (db *Database) Upsert(dbToUpsert *Database) {
 }
 
 func (db *Database) Size() int {
+	db.mutex.RLock()
+	defer db.mutex.RUnlock()
+
 	return len(db.db)
 }
 
 // Retrieves all NodeIDs mapped in [db]
 func (db *Database) GetNodeIDs() []NodeID {
+	db.mutex.RLock()
+	defer db.mutex.RUnlock()
+
 	nodeIDs := make([]NodeID, len(db.db))
 	i := 0
 	for nodeID, _ := range db.db {
