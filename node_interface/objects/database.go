@@ -81,19 +81,15 @@ func (db *Database) SetGossipValue(id NodeID, v GossipValue) {
 	if v.GetTime().After(time.Now()) {
 		return
 	}
-	// if db.ipToNumPorts[id.IP] == maxNumPortsPerIP {
-	// 	return false
-	// }
 	currGossipVal, found := db.db[id]
-	if found && (currGossipVal.GetTime().After(v.GetTime()) {
+	if found && currGossipVal.GetTime().After(v.GetTime()) {
 		return
 	}
 	db.db[id] = v
-	// db.ipToNumPorts[id.IP] = db.ipToNumPorts[id.IP] + 1
 	// THIS IS BAD THIS IS A SIDE EFFECT BUT IT GETS THE JOB DONE, PRINT ONLY EXACTLY WHEN AN UPDATE OCCURS
 	// TODO: is there a more clean way to do this? maybe return updated node ids and print at the gossip or main level
 	// only print if already in db and new value
-	if currGossipVal.GetValue() != v.GetValue(){
+	if found && currGossipVal.GetValue() != v.GetValue(){
 		fmt.Println(fmt.Sprintf("%s --> %s", id.Serialize(), v.GetValueString()))
 	}
 }
