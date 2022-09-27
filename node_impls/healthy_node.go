@@ -15,6 +15,7 @@ import (
 const (
 	defaultInitValue = 0
 	numLinesToRead = 256
+	timeBetweenGossips = 3
 )
 
 // Healthy Gossip Node implements a node that shares its own database to peers and pulls other peers' database, merging it into its
@@ -51,9 +52,9 @@ func (n *GossipNode) BoostrapNode(){
 	// start listening on this node
 	go n.listen()
 
-	// start gossiping every 3 seconds
+	// start gossiping every [timeBetweenGossips] seconds
 	go func(){
-		for range time.Tick(3 * time.Second) {
+		for range time.Tick(timeBetweenGossips * time.Second) {
 			n.gossip()
 		}
 	}()
@@ -80,10 +81,8 @@ func (n *GossipNode) gossip() {
 	conn, err := net.Dial("tcp", peer.Serialize())
 	// err check
 	if err != nil {
-		// do necessary error handling
-		// if dial doesn't work, add node id to blacklist
 		fmt.Println(err.Error())
-
+		// if dial doesn't work, add node id to blacklist
 		n.blacklist[peer] = struct{}{}
 		return
 	}
@@ -112,8 +111,6 @@ func (n *GossipNode) gossip() {
 
 	// validate response from node
 	peerDBStr := string(messageBuffer)
-	// if response is not valid
-		// do necessary error handling
 	peerDB, err := objects.DeserializeDatabase(peerDBStr)
 	if err != nil {
 		fmt.Println(err.Error())
@@ -164,9 +161,6 @@ func (n *GossipNode) AddPeer(peer objects.NodeID) error {
 
 	// Dial node
 	conn, err := net.Dial("tcp", peer.Serialize())
-	// err check
-		// do necessary error handling
-		// if dial doesn't work, add node id to blacklist
 	if err != nil {
 		n.blacklist[peer] = struct{}{}
 		return err
@@ -198,8 +192,6 @@ func (n *GossipNode) AddPeer(peer objects.NodeID) error {
 
 	// validate response from node
 	peerDBStr := string(messageBuffer)
-	// if response is not valid
-		// do necessary error handling
 	peerDB, err := objects.DeserializeDatabase(peerDBStr)
 	if err != nil {
 		return err
