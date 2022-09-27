@@ -63,6 +63,7 @@ func (db *Database) GetGossipValue(id NodeID) (GossipValue, bool) {
 // SetGossipValue sets [id] to [v] in the database unless the following is the case in order to abide by invariants:
 // - There are already [maxNumPortsPerIP] ports associated with the same IPAddress in [db]
 // - The time associated with [v] is past this nodes local time ("in the future")
+// - If there is already a value in the [db] associated with [id], and the timestamp of the value is after the timestamp of [v]
 func (db *Database) SetGossipValue(id NodeID, v GossipValue) {
 	if v.GetTime().After(time.Now()) {
 		return
@@ -70,8 +71,15 @@ func (db *Database) SetGossipValue(id NodeID, v GossipValue) {
 	if db.ipToNumPorts[id.IP] == maxNumPortsPerIP {
 		return
 	}
+	currGossipVal, found := db.db[id]
+	if found && currGossipVal.GetTime().After(v.GetTime()) {
+		return
+	}
 	db.db[id] = v
 	db.ipToNumPorts[id.IP] = db.ipToNumPorts[id.IP] + 1
+	// THIS IS BAD THIS IS A SIDE EFFECT BUT IT SEEMS TO GET THE JOB DONE, PRINT ONLY EXACTLY WHEN AN UPDATE OCCURS
+	// TODO: is there a more clean way to do this? maybe return updated node ids and print at the gossip or main level
+	fmt.Println(fmt.Sprintf("%s --> %s", id.Serialize(), v.GetValueString()))
 }
 
 func (db *Database) Serialize() string {
@@ -125,20 +133,6 @@ func (db *Database) Upsert(dbToUpsert *Database) {
 	}
 }
 
-// is this function needed?
-func (db *Database) PrintDatabase() {
-	fmt.Println(db.Serialize())
-}
-
-// Serializes a single database entry into the following format: 'NodeID,GossipValue'
-// ex. 122.116.233.149:8080,1234154131241,123
-// Invariant: 
-// 	[id] must exist as an entry in [db]
-func (db *Database) serializeDatabaseEntry(id NodeID) (string)  {
-	value, _ := db.db[id]
-	return fmt.Sprintf("%v,%v", id.Serialize(), value.Serialize())
-}
-
 func (db *Database) Size() int {
 	return len(db.db)
 }
@@ -152,4 +146,13 @@ func (db *Database) GetNodeIDs() []NodeID {
 		i++
 	}
 	return nodeIDs
+}
+
+// Serializes a single database entry into the following format: 'NodeID,GossipValue'
+// ex. 122.116.233.149:8080,1234154131241,123
+// Invariant: 
+// 	[id] must exist as an entry in [db]
+func (db *Database) serializeDatabaseEntry(id NodeID) (string)  {
+	value, _ := db.db[id]
+	return fmt.Sprintf("%v,%v", id.Serialize(), value.Serialize())
 }

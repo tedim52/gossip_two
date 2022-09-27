@@ -16,11 +16,14 @@ import (
 
 const (
 	promptStr = ">> "
+
+	// TODO: this validation logic should go in functions in objects.NodeID, knowledge of correct format/regexes shouldn't be at the main lvl
 	portRegexStr = "^((6553[0-5])|(655[0-2][0-9])|(65[0-4][0-9]{2})|(6[0-4][0-9]{3})|([1-5][0-9]{4})|([0-5]{0,5})|([0-9]{1,4}))$"
 	ipAddressRegexStr = "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5]).){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$"
 )
 
 var (
+	// TODO: this validation logic should go in functions in objects.NodeID, knowledge of correct format/regexes shouldn't be at the main lvl
 	ipAddressRegexPat = regexp.MustCompile(ipAddressRegexStr)
 	portRegexPat = regexp.MustCompile(portRegexStr)
 
@@ -59,7 +62,7 @@ func gossipRepl(node node_interface.GossipNode){
 
 		if (input == "?"){
 			fmt.Println("printing gossip database...")
-			node.GetDatabase().PrintDatabase()
+			fmt.Print(node.GetDatabase().Serialize())
 		} else if (input[0] == '+' && len(input) > 1) {
 			fmt.Println("adding peer to gossip node...")
 			input = input[1:]
@@ -88,6 +91,7 @@ func processInput(args []string) (string, string, error) {
 	}
 	ipAddressStr := args[1]
 	portStr := args[2]
+	// TODO: this validation logic should go in functions in objects.NodeID, knowledge of correct format/regexes shouldn't be at the main lvl
 	if !ipAddressRegexPat.Match([]byte(ipAddressStr)) {
 		return "", "", objects.InvalidIPAddress
 	}

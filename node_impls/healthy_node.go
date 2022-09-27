@@ -3,14 +3,19 @@ package node_impls
 import (
 	"github.com/tedim52/gossip_two/node_interface/objects"
 
+	"fmt"
+	"bufio"
 	"sync"
 	"time"
 	"net"
 	"errors"
+	"io"
+	"math/rand"
 )
 
 const (
 	defaultInitValue = 0
+	numLinesToRead = 256
 )
 
 type GossipMessage struct {
@@ -48,8 +53,8 @@ func NewHealthyGossipNode(ip string, port string) *GossipNode {
 		nodeID: nodeID, 
 		currVal: initValue,
 		database: db,
-		peers: map[objects.NodeID]struct{}{},
-		blacklist: map[objects.NodeID]struct{}{},
+		peers: make(map[objects.NodeID]struct{}),
+		blacklist: make(map[objects.NodeID]struct{}),
 	}
 }
 
@@ -60,34 +65,81 @@ func (n *GossipNode) BoostrapNode(){
 
 // gossip initiates the sending of gossip messages to
 func (n *GossipNode) gossip() {
-	// fmt.Println("starting to gossip...")
+	fmt.Println("starting to gossip...")
 	clock := 0
 	for {
 		clock++
 		if clock % 3 == 0 {
+			// tracks errors throughout gossip
+			var err error
 			// select random node from peers
-			// dial node
+			peer := n.GetRandomPeerNodeID()
+	
+			fmt.Println("attempting to gossip with a random peer...")
+			// Dial node
+			conn, err := net.Dial("tcp", peer.Serialize())
 
 			// err check
+			if err != nil {
 				// do necessary error handling
 				// if dial doesn't work, add node id to blacklist
-
-			// if successful
-				// wait for response from node
-				// read response into buffer
-				// validate response from node
-				// if response is not valid
-					// do necessary error handling
-				// if response is valid
-					// upsert database
-				// WHAT DO WE PRINT OUT HERE? ONLY THE DIFFERENT GossipValueS???
+				fmt.Println("error dialing peer, adding peer to blacklist and removing from peers...")
+				n.blacklist[peer] = struct{}{}
+				delete(n.peers, peer)
+				continue
+			}
+		
+			fmt.Println("reading response from peer...")
+			// read response into buffer
+			reader := bufio.NewReader(conn)
+			var messageBuffer []byte
+			lineCounter := 0
+			fmt.Println("reading message from peer...")
+			for {
+				if lineCounter == numLinesToRead {
+					break
+				}
+				bytes, err := reader.ReadBytes(byte('\n'))
+				if err != nil {
+					if err == io.EOF {
+						messageBuffer = append(messageBuffer, bytes...)
+						break
+					} else {
+						break
+					}
+				}
+				messageBuffer = append(messageBuffer, bytes...)
+				lineCounter++
+			}
+			if err != nil && err != io.EOF {
+				// this means that smth went wrong and we actually don't want to do any gossip so keep moving clock
+				continue
+			}
+		
+			fmt.Println("validating message from peer...")
+			// validate response from node
+			peerDBStr := string(messageBuffer)
+			// if response is not valid
+				// do necessary error handling
+			peerDB, err := objects.DeserializeDatabase(peerDBStr)
+			if err != nil {
+				fmt.Println("errors in message from from peer...")
+				continue
+			}
+		
+			fmt.Println("successfully retrieved message from peer, updating this nodes database now...")
+			// upsert database
+			n.database.Upsert(peerDB)
+		
+			fmt.Println("closing connection to peer...")
 			// close the connection
+			conn.Close()
 		}
 	}
 }
 
 func (n *GossipNode) listen() {
-	// fmt.Println("starting to listen...")
+	fmt.Println("starting to listen...")
 	// setup listener
 	for {
 		// accept connections
@@ -103,29 +155,71 @@ func (n *GossipNode) AddPeer(peer objects.NodeID) error {
 	n.mutex.Lock()
 	defer n.mutex.Unlock()
 
+	fmt.Println("checking if peeris in blacklist...")
 	// Check that this node is not in the blacklist
 	if _, exists := n.blacklist[peer]; exists {
 		return errors.New("Error adding peer. Peer was blacklisted.")
 	}
 
-	// dial node
-	_, _ = net.Dial("tcp", peer.NodeID)
-
+	fmt.Println("dialing peers...")
+	// Dial node
+	conn, err := net.Dial("tcp", peer.Serialize())
 	// err check
 		// do necessary error handling
 		// if dial doesn't work, add node id to blacklist
+	if err != nil {
+		fmt.Println("error dialing peer, adding peer to blacklist and removing from peers...")
+		n.blacklist[peer] = struct{}{}
+		delete(n.peers, peer)
+		return err
+	}
 
-	// if successful
-		// wait for response from node
-		// read response into buffer
-		// validate response from node
-		// if response is not valid
-			// do necessary error handling
-		// if response is valid
-			// upsert database
-			// add node to peer list
+	fmt.Println("reading response from peer...")
+	// read response into buffer
+	reader := bufio.NewReader(conn)
+	var messageBuffer []byte
+	lineCounter := 0
+	fmt.Println("reading message from peer...")
+	for {
+		if lineCounter == numLinesToRead {
+			break
+		}
+		bytes, err := reader.ReadBytes(byte('\n'))
+		if err != nil {
+			if err == io.EOF {
+				messageBuffer = append(messageBuffer, bytes...)
+				break
+			} else {
+				return err
+			}
+		}
+		messageBuffer = append(messageBuffer, bytes...)
+		lineCounter++
+	}
+
+	fmt.Println("validating message from peer...")
+	// validate response from node
+	peerDBStr := string(messageBuffer)
+	// if response is not valid
+		// do necessary error handling
+	peerDB, err := objects.DeserializeDatabase(peerDBStr)
+	if err != nil {
+		fmt.Println("errors in message from from peer...")
+		return err
+	}
+
+	fmt.Println("successfully retrieved message from peer, updating this nodes database now...")
+	// upsert database
+	n.database.Upsert(peerDB)
+
+	fmt.Println("adding this node to peer list...")
+	// add node to peer list
+	n.peers[peer] = struct{}{}
 	
+	fmt.Println("closing connection to peer...")
 	// close the connection
+	conn.Close()
+	
 	return nil
 }
 
@@ -145,9 +239,18 @@ func (n *GossipNode) UpdateValue(v int64) {
 	n.currVal = gossipValue
 }
 
-func (n* GossipNode) GetDatabase() *objects.Database {
+func (n *GossipNode) GetDatabase() *objects.Database {
 	n.mutex.Lock()
 	defer n.mutex.Unlock()
 
 	return n.database
+}
+
+func (n *GossipNode) GetRandomPeerNodeID()  objects.NodeID {
+	k := rand.Intn(len(n.peers))
+	peerNodeIDs := make([]objects.NodeID, len(n.peers))
+	for nodeID, _ := range(n.peers) {
+		peerNodeIDs = append(peerNodeIDs, nodeID)
+	}
+	return peerNodeIDs[k]
 }
