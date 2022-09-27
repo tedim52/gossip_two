@@ -91,6 +91,7 @@ func (db *Database) SetGossipValue(id NodeID, v GossipValue) {
 	// THIS IS BAD THIS IS A SIDE EFFECT BUT IT GETS THE JOB DONE, PRINT ONLY EXACTLY WHEN AN UPDATE OCCURS
 	// TODO: is there a more clean way to do this? maybe return updated node ids and print at the gossip or main level
 	// only print if already in db and new value
+	// additionally this doesn't always print when we want it to (on any update)
 	if found && currGossipVal.GetValue() != v.GetValue(){
 		fmt.Println(fmt.Sprintf("%s --> %s", id.Serialize(), v.GetValueString()))
 	}
@@ -178,7 +179,7 @@ func (db *Database) serializeDatabaseEntry(id NodeID) (string)  {
 }
 
 // very brute force check
-// returns true if there are [maxNumPortsPerIP] ports associated with [ip] in [db]
+// maxPortsForIP returns true if there are [maxNumPortsPerIP] ports associated with [ip] in [db]
 func (db *Database) maxPortsForIP(ip IPAddress) bool {
 	numPorts := 0
 	for nodeID, _ := range db.db {
