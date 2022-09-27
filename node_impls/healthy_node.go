@@ -38,8 +38,6 @@ type GossipNode struct {
 func NewHealthyGossipNode(ip string, port string) *GossipNode {
 	nodeID := objects.NewNodeID(ip, port)
 	db := objects.InitializeDatabase()
-	initVal := objects.NewGossipValue(time.Now(), 0)
-	db.SetGossipValue(nodeID, initVal)
 
 	return &GossipNode {
 		nodeID: nodeID, 

@@ -74,29 +74,28 @@ func (db *Database) GetGossipValue(id NodeID) (GossipValue, bool) {
 // - The time associated with [v] is past this nodes local time ("in the future")
 // - If there is already a value in the [db] associated with [id], and the timestamp of the value is after the timestamp of [v]
 // Returns true if something was updated, and false otherwise. 
-func (db *Database) SetGossipValue(id NodeID, v GossipValue) bool {
+func (db *Database) SetGossipValue(id NodeID, v GossipValue) {
 	db.mutex.Lock()
 	defer db.mutex.Unlock()
 
 	if v.GetTime().After(time.Now()) {
-		return false
+		return
 	}
 	// if db.ipToNumPorts[id.IP] == maxNumPortsPerIP {
 	// 	return false
 	// }
 	currGossipVal, found := db.db[id]
-	if found && currGossipVal.GetTime().After(v.GetTime()) {
-		return false
+	if found && (currGossipVal.GetTime().After(v.GetTime()) {
+		return
 	}
 	db.db[id] = v
 	// db.ipToNumPorts[id.IP] = db.ipToNumPorts[id.IP] + 1
 	// THIS IS BAD THIS IS A SIDE EFFECT BUT IT GETS THE JOB DONE, PRINT ONLY EXACTLY WHEN AN UPDATE OCCURS
 	// TODO: is there a more clean way to do this? maybe return updated node ids and print at the gossip or main level
 	// only print if already in db and new value
-	if found && currGossipVal.GetValue() != v.GetValue(){
+	if currGossipVal.GetValue() != v.GetValue(){
 		fmt.Println(fmt.Sprintf("%s --> %s", id.Serialize(), v.GetValueString()))
 	}
-	return true
 }
 
 func (db *Database) Serialize() string {
@@ -116,9 +115,6 @@ func DeserializeDatabase(dbStr string) (*Database, error) {
 	db := InitializeDatabase()
 	dbEntryStrList := strings.Split(dbStr, newEntryDelimeter)
 	dbEntryStrList = dbEntryStrList[:len(dbEntryStrList) - 1]
-	if len(dbEntryStrList) == 0 {
-		return nil, InvalidDatabaseFormat
-	}
 	for _, entryStr  := range(dbEntryStrList) {
 		entryValueStrList := strings.SplitAfterN(entryStr, entryDelimeter, 2)
 		if len(entryValueStrList) != 2 {

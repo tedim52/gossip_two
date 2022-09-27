@@ -16,7 +16,8 @@ import (
 
 const (
 	promptStr = ">> "
-
+	addPeerChar = '+'
+	printDBStr = "?"
 	// TODO: this validation logic should go in functions in objects.NodeID, knowledge of correct format/regexes shouldn't be at the main lvl
 	portRegexStr = "^((6553[0-5])|(655[0-2][0-9])|(65[0-4][0-9]{2})|(6[0-4][0-9]{3})|([1-5][0-9]{4})|([0-5]{0,5})|([0-9]{1,4}))$"
 	ipAddressRegexStr = "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5]).){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$"
@@ -57,9 +58,9 @@ func gossipRepl(node node_interface.GossipNode){
 		}
 		input = strings.TrimSpace(input)
 
-		if (input == "?"){
+		if (input == printDBStr){
 			fmt.Print(node.GetDatabase().Serialize())
-		} else if (input[0] == '+' && len(input) > 1) {
+		} else if (input[0] == addPeerChar && len(input) > 1) {
 			input = input[1:]
 			peerNodeID, err := objects.DeserializeNodeID(input)
 			if err != nil {
