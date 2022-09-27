@@ -128,7 +128,7 @@ func (n *BadGossipNode) listen() {
 	defer ln.Close()
 	
 	for {
-		conn, err := ln.Accept()
+		_, err := ln.Accept()
 		if err != nil {
 			fmt.Println(err.Error())
 			continue
