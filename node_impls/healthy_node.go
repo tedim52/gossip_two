@@ -15,6 +15,7 @@ import (
 const (
 	numLinesToRead = 256
 	timeBetweenGossips = 3
+	timeoutDeadline = 3 * time.Second
 )
 
 // Healthy Gossip Node implements a node that shares its own database to peers and pulls other peers' database, merging it into its
@@ -73,6 +74,10 @@ func (n *GossipNode) gossip() {
 	}
 	// Check that this node is not in the blacklist
 	if _, found := n.blacklist[peer]; found {
+		return
+	}
+	// Check that this peer is not itself
+	if peer.NodeID == n.nodeID.NodeID {
 		return
 	}
 
@@ -144,6 +149,8 @@ func (n *GossipNode) listen() {
 			continue
 		}
 
+		// if we haven't seen this node before, add it to our peerlist
+
 		// once connection is received, send back serialized GossipValue of database
 		if _, err = conn.Write([]byte(n.database.Serialize())); err != nil {
 			fmt.Println(err.Error())
@@ -169,7 +176,7 @@ func (n *GossipNode) AddPeer(peer objects.NodeID) error {
 		n.blacklist[peer] = struct{}{}
 		return err
 	}
-	err = conn.SetReadDeadline(time.Now().Add(10 * time.Second))
+	err = conn.SetReadDeadline(time.Now().Add(timeoutDeadline))
 	if err != nil {
 		n.blacklist[peer] = struct{}{}
 		return err
@@ -224,8 +231,6 @@ func (n *GossipNode) GetDatabase() *objects.Database {
 	return n.database
 }
 
-// Invariant: 
-// 	- [peers] cannot equal 0
 func (n *GossipNode) getRandomPeerNodeID() (objects.NodeID, bool) {
 	if len(n.peers) == 0 {
 		return objects.NodeID{}, false

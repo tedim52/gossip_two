@@ -84,9 +84,9 @@ func (db *Database) SetGossipValue(id NodeID, v GossipValue) {
 	if found && currGossipVal.GetTime().After(v.GetTime()) {
 		return
 	}
-	if db.maxPortsForIP(id.IP) {
-		return
-	}
+	// if db.maxPortsForIP(id.IP) {
+	// 	return
+	// }
 	db.db[id] = v
 	// THIS IS BAD THIS IS A SIDE EFFECT BUT IT GETS THE JOB DONE, PRINT ONLY EXACTLY WHEN AN UPDATE OCCURS
 	// TODO: is there a more clean way to do this? maybe return updated node ids and print at the gossip or main level

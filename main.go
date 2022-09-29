@@ -79,6 +79,10 @@ func gossipRepl(node node_interface.GossipNode){
 				continue
 			}
 		} else if intVal, err := strconv.ParseInt(input, 10, 32); err == nil {
+			if !(intVal >= 0 && intVal <= 9) {
+				fmt.Println("Please enter a digit 0-9.")	
+				continue	
+			}
 			node.UpdateValue(intVal)
 		} else {
 			fmt.Println("Unrecognized input. Try again.")
